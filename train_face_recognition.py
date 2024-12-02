@@ -48,7 +48,7 @@ def load_dataset(dataset_dir, img_size=(128, 128)):
 
     return X, y, label_encoder
 
-# Function to build CNN model
+# Function to build CNN model (Updated)
 def build_model(input_shape, num_classes, learning_rate=0.001):
     """
     Build and compile a CNN model.
@@ -61,24 +61,25 @@ def build_model(input_shape, num_classes, learning_rate=0.001):
     Returns:
         model: Compiled CNN model.
     """
-    model = Sequential([
-        Conv2D(32, (3, 3), activation='relu', input_shape=input_shape),
-        MaxPooling2D(pool_size=(2, 2)),
-        Dropout(0.25),
-
-        Conv2D(64, (3, 3), activation='relu'),
-        MaxPooling2D(pool_size=(2, 2)),
-        Dropout(0.25),
-
+    # Updated CNN model architecture
+    cnn_model = Sequential([
+        Conv2D(filters=36, kernel_size=7, activation='relu', input_shape=input_shape),
+        MaxPooling2D(pool_size=2),
+        Conv2D(filters=54, kernel_size=5, activation='relu'),
+        MaxPooling2D(pool_size=2),
         Flatten(),
-        Dense(128, activation='relu'),
+        Dense(2024, activation='relu'),
         Dropout(0.5),
-        Dense(num_classes, activation='softmax')
+        Dense(1024, activation='relu'),
+        Dropout(0.5),
+        Dense(512, activation='relu'),
+        Dropout(0.5),
+        Dense(num_classes, activation='softmax')  # Number of outputs is dynamic based on num_classes
     ])
 
     optimizer = Adam(learning_rate=learning_rate)
-    model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    return model
+    cnn_model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    return cnn_model
 
 # Function to plot training history
 def plot_training_history(history):

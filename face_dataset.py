@@ -1,49 +1,12 @@
 import os
 import cv2
 import numpy as np
-from PIL import Image, ImageEnhance, ImageOps
-import random
+from PIL import Image
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-def augment_image(image):
+def preprocess_and_augment_with_keras(input_dir, output_dir, img_size=(128, 128), augmentations=2):
     """
-    Apply random augmentations to an image using Pillow.
-    """
-    # Random rotation
-    if random.random() > 0.5:
-        angle = random.uniform(-30, 30)  # Rotate between -30 and 30 degrees
-        image = image.rotate(angle, expand=True)
-
-    # Random horizontal flip
-    if random.random() > 0.5:
-        image = ImageOps.mirror(image)
-
-    # Random brightness adjustment
-    if random.random() > 0.5:
-        enhancer = ImageEnhance.Brightness(image)
-        factor = random.uniform(0.8, 1.2)  # Brightness factor
-        image = enhancer.enhance(factor)
-
-    # Random zoom (crop and resize back)
-    if random.random() > 0.5:
-        width, height = image.size
-        zoom_factor = random.uniform(0.8, 1.2)  # Zoom in/out factor
-        new_width = int(width * zoom_factor)
-        new_height = int(height * zoom_factor)
-        image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)  # Use Resampling.LANCZOS
-        if zoom_factor > 1:
-            # Crop to original size
-            left = (new_width - width) // 2
-            top = (new_height - height) // 2
-            image = image.crop((left, top, left + width, top + height))
-        else:
-            # Pad to original size
-            image = ImageOps.pad(image, (width, height), color=(0, 0, 0))
-
-    return image
-
-def preprocess_and_augment_with_pillow(input_dir, output_dir, img_size=(128, 128), augmentations=2):
-    """
-    Preprocesses and augments images using OpenCV and Pillow.
+    Preprocesses and augments images using OpenCV and Keras ImageDataGenerator.
     
     Args:
         input_dir (str): Path to the input dataset directory.
@@ -53,6 +16,17 @@ def preprocess_and_augment_with_pillow(input_dir, output_dir, img_size=(128, 128
     """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
+
+    # Create an ImageDataGenerator for data augmentation
+    datagen = ImageDataGenerator(
+        rotation_range=30,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest'
+    )
 
     # Iterate through each person's folder in the dataset
     for person_name in os.listdir(input_dir):
@@ -99,14 +73,20 @@ def preprocess_and_augment_with_pillow(input_dir, output_dir, img_size=(128, 128
             # Convert to Pillow Image for augmentation
             pil_image = Image.fromarray(cv2.cvtColor(foreground, cv2.COLOR_BGR2RGB))
 
-            # Step 5: Apply data augmentation with Pillow
-            for i in range(augmentations):
-                augmented_image = augment_image(pil_image)  # Apply random augmentations
-                aug_img_path = os.path.join(output_person_folder, f"aug_{i}_{img_name}")
-                augmented_image.save(aug_img_path)
-                print(f"Augmented and saved: {aug_img_path}")
+            # Convert PIL image to numpy array for use with ImageDataGenerator
+            img_array = np.array(pil_image)
+            img_array = img_array.reshape((1,) + img_array.shape)  # Add batch dimension
+
+            # Step 5: Apply data augmentation with Keras ImageDataGenerator
+            i = 0
+            for batch in datagen.flow(img_array, batch_size=1, save_to_dir=output_person_folder, 
+                                      save_prefix='aug', save_format='jpeg'):
+                i += 1
+                if i >= augmentations:
+                    break
+            print(f"Generated {augmentations} augmented images for: {img_name}")
 
 # Define input and output directories and call the function
-input_directory = "Indian_actors_faces"          # Replace with the path to your dataset folder
-output_directory = "augmented_dataset"           # Where augmented images will be saved
-preprocess_and_augment_with_pillow(input_directory, output_directory, augmentations=2)
+input_directory = "Indian_actors_faces"  # Replace with the path to your dataset folder
+output_directory = "augmented_dataset"   # Where augmented images will be saved
+preprocess_and_augment_with_keras(input_directory, output_directory, augmentations=2)

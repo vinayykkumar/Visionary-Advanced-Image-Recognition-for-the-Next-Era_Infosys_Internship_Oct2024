@@ -6,4 +6,4 @@
 2) Milestone II :- Facial_Detection_Model_Training.ipynb: Includes steps for training the facial detection model.
 
 
-The dataset used and generated in these notebooks can be accessed via https://drive.google.com/drive/folders/1l44Vq9O6vPipljr9v4j1Ly8DGwky9n3V?usp=sharing
+The dataset used and generated in these notebooks can be accessed via https://drive.google.com/drive/folders/1sGwderMvQx37lZghxqzjEOyd_V7s8ENP?usp=drive_link

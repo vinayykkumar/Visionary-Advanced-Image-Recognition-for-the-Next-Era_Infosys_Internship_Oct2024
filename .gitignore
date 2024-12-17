@@ -1,0 +1,12 @@
+# Ignore Datasets and Images
+Dataset/
+test_images/
+Train/
+Test/
+Validation/
+cropped/
+opencv/
+val/
+working_project/
+Visionary-Advanced Image Recognition for the Next Era.pdf/
+

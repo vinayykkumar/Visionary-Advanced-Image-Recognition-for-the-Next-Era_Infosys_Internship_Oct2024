@@ -1,0 +1,26 @@
+# Streamlit for the web application
+streamlit
+
+# TensorFlow for the deep learning model
+tensorflow>=2.8
+
+# NumPy for numerical computations
+numpy
+
+# OpenCV for image preprocessing
+opencv-python-headless
+
+# Matplotlib for plotting and visualization
+matplotlib
+
+# Pandas (optional, in case you handle dataframes)
+pandas
+
+# Scikit-learn for additional utilities (e.g., metrics, preprocessing)
+scikit-learn
+
+# Pillow for image processing
+pillow
+
+# PyYAML for configuration (optional)
+pyyaml

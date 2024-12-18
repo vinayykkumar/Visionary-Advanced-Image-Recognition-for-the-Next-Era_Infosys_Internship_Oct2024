@@ -47,24 +47,18 @@ def load_dataset(dataset_dir, img_size=(128, 128)):
 
     return X, y, label_encoder
 
+from tensorflow.keras.layers import Input
 
 def build_improved_model(input_shape, num_classes, learning_rate=0.001, weight_decay=1e-4):
     """
     Build and compile an improved CNN model with Batch Normalization and L2 regularization.
-
-    Args:
-        input_shape (tuple): Shape of the input images.
-        num_classes (int): Number of output classes.
-        learning_rate (float): Learning rate for the optimizer.
-        weight_decay (float): Weight decay (L2 regularization factor).
-
-    Returns:
-        model: Compiled CNN model.
     """
     model = Sequential([
+        # Input Layer
+        Input(shape=input_shape),
+
         # First Convolutional Block
-        Conv2D(32, (3, 3), activation='relu', input_shape=input_shape,
-               kernel_regularizer=regularizers.l2(weight_decay)),
+        Conv2D(32, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(weight_decay)),
         BatchNormalization(),
         MaxPooling2D(pool_size=(2, 2)),
         Dropout(0.25),

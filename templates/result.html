@@ -1,0 +1,6 @@
+<div class="result">
+    <p>{{ result }}</p>
+</div>
+<div class="image-preview">
+    <img src="{{ url_for('static', filename='uploaded_images/' + image_path.split('/')[-1]) }}" alt="Uploaded Image">
+</div>

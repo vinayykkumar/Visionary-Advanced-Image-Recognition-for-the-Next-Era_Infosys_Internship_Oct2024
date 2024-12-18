@@ -56,7 +56,7 @@ def preprocess_and_augment_with_pillow(input_dir, output_dir, img_size=(128, 128
         if not os.path.isdir(person_folder):
             continue
 
-        # Create the person folder in the output directory
+        # Create the person folder in the output directory (ensure folder structure is maintained)
         if not os.path.exists(output_person_folder):
             os.makedirs(output_person_folder)
 
@@ -93,8 +93,9 @@ def preprocess_and_augment_with_pillow(input_dir, output_dir, img_size=(128, 128
                 print(f"Augmented and saved: {aug_img_path}")
 
 
-# Example usage:
-input_dataset_dir = "data\My dataset"  # Input directory where original images are stored
-output_dataset_dir = "data\augmented_dataset"
-# Call the function to preprocess and augment images
-preprocess_and_augment_with_pillow(input_dataset_dir, output_dataset_dir, img_size=(128, 128), augmentations=4)
+
+# # Example usage:
+# input_dataset_dir = "data/My dataset"
+# output_dataset_dir = "data/augmented_dataset"
+# # Call the function to preprocess and augment images
+# preprocess_and_augment_with_pillow(input_dataset_dir, output_dataset_dir, img_size=(128, 128), augmentations=4)

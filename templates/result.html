@@ -1,6 +1,11 @@
 <div class="result">
     <p>{{ result }}</p>
 </div>
+
 <div class="image-preview">
-    <img src="{{ url_for('static', filename='uploaded_images/' + image_path.split('/')[-1]) }}" alt="Uploaded Image">
+    {% if image_url %}
+        <img src="{{ image_url }}" alt="Uploaded Image">
+    {% else %}
+        <p>No image uploaded.</p>
+    {% endif %}
 </div>

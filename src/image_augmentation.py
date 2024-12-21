@@ -39,7 +39,7 @@ def augment_image(image):
 
     return image
 
-def preprocess_and_augment_with_pillow(input_dir, output_dir, img_size=(128, 128), augmentations=4):
+def preprocess_and_augment_with_pillow(input_dir, output_dir, img_size=(224, 224), augmentations=4):
     """
     Preprocesses and augments images using OpenCV and Pillow.
     """
@@ -70,20 +70,17 @@ def preprocess_and_augment_with_pillow(input_dir, output_dir, img_size=(128, 128
                 print(f"Warning: Could not read image {img_path}")
                 continue
 
-            # Preprocess the image: resize, bilateral filter, convert to grayscale, threshold, and extract foreground
+            # Preprocess the image: resize and normalize
             image_resized = cv2.resize(image, img_size)
-            image_bilateral = cv2.bilateralFilter(image_resized, d=9, sigmaColor=75, sigmaSpace=75)
-            gray = cv2.cvtColor(image_bilateral, cv2.COLOR_BGR2GRAY)
-            _, thresholded = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
-            foreground = cv2.bitwise_and(image_bilateral, image_bilateral, mask=thresholded)
+            image_normalized = image_resized / 255.0
 
             # Save the preprocessed image to the output directory
             preprocessed_path = os.path.join(output_person_folder, f"processed_{img_name}")
-            cv2.imwrite(preprocessed_path, foreground)
+            cv2.imwrite(preprocessed_path, (image_normalized * 255).astype(np.uint8))
             print(f"Preprocessed and saved: {preprocessed_path}")
 
             # Convert to PIL image for augmentation
-            pil_image = Image.fromarray(cv2.cvtColor(foreground, cv2.COLOR_BGR2RGB))
+            pil_image = Image.fromarray(cv2.cvtColor(image_resized, cv2.COLOR_BGR2RGB))
 
             # Perform augmentations and save them
             for i in range(augmentations):
@@ -92,10 +89,9 @@ def preprocess_and_augment_with_pillow(input_dir, output_dir, img_size=(128, 128
                 augmented_image.save(aug_img_path)
                 print(f"Augmented and saved: {aug_img_path}")
 
+# # Define input and output directories
+# input_directory = "//content//gdrive//MyDrive//My dataset"          # Replace with the path to your dataset folder
+# output_directory = "augmented_dataset"           # Where augmented images will be saved
 
-
-# # Example usage:
-# input_dataset_dir = "data/My dataset"
-# output_dataset_dir = "data/augmented_dataset"
-# # Call the function to preprocess and augment images
-# preprocess_and_augment_with_pillow(input_dataset_dir, output_dataset_dir, img_size=(128, 128), augmentations=4)
+# # Call the preprocessing and augmentation function
+# preprocess_and_augment_with_pillow(input_directory, output_directory)

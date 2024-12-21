@@ -1,0 +1,10 @@
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.git/
+.gitignore
+
+# Ignore IDE configuration files
+.idea/
+.vscode/

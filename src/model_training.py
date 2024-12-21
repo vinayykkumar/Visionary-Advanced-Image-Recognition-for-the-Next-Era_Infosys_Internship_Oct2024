@@ -1,24 +1,18 @@
-# model_training.py
 import os
 import cv2
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from tensorflow.keras import regularizers
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, GlobalAveragePooling2D, Dense, Dropout, BatchNormalization
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, Dropout, GlobalAveragePooling2D
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.callbacks import EarlyStopping
+from sklearn.utils.class_weight import compute_class_weight
 
-def load_dataset(dataset_dir, img_size=(128, 128)):
+def load_dataset(dataset_dir, img_size=(160, 160)):
     """
     Load images and labels from the specified dataset directory.
-
-    Args:
-        dataset_dir (str): Path to dataset directory.
-        img_size (tuple): Target size for resizing images.
-
-    Returns:
-        tuple: Tuple containing image data (X), labels (y), and LabelEncoder instance.
     """
     X, y = [], []
     label_names = []
@@ -47,88 +41,64 @@ def load_dataset(dataset_dir, img_size=(128, 128)):
 
     return X, y, label_encoder
 
-from tensorflow.keras.layers import Input
-
-def build_improved_model(input_shape, num_classes, learning_rate=0.001, weight_decay=1e-4):
+def build_mobilenetv2_model(input_shape, num_classes, learning_rate=0.001):
     """
-    Build and compile an improved CNN model with Batch Normalization and L2 regularization.
+    Build and compile a MobileNetV2-based CNN model.
     """
-    model = Sequential([
-        # Input Layer
-        Input(shape=input_shape),
+    base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=input_shape)
+    
+    # Fine-tune the base model by unfreezing some layers
+    base_model.trainable = True
+    for layer in base_model.layers[:-4]:  # Freeze all but the last 4 layers
+        layer.trainable = False
 
-        # First Convolutional Block
-        Conv2D(32, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(weight_decay)),
-        BatchNormalization(),
-        MaxPooling2D(pool_size=(2, 2)),
-        Dropout(0.25),
+    # Add custom layers on top of the base model
+    x = base_model.output
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(256, activation='relu')(x)
+    x = Dropout(0.5)(x)
+    x = Dense(128, activation='relu')(x)
+    x = Dropout(0.5)(x)
+    output = Dense(num_classes, activation='softmax')(x)
 
-        # Second Convolutional Block
-        Conv2D(64, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(weight_decay)),
-        BatchNormalization(),
-        MaxPooling2D(pool_size=(2, 2)),
-        Dropout(0.25),
-
-        # Third Convolutional Block
-        Conv2D(128, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(weight_decay)),
-        BatchNormalization(),
-        MaxPooling2D(pool_size=(2, 2)),
-        Dropout(0.25),
-
-        # Fourth Convolutional Block
-        Conv2D(256, (3, 3), activation='relu', kernel_regularizer=regularizers.l2(weight_decay)),
-        BatchNormalization(),
-        MaxPooling2D(pool_size=(2, 2)),
-        Dropout(0.25),
-
-        # Global Average Pooling and Dense Layers
-        GlobalAveragePooling2D(),
-        Dense(128, activation='relu', kernel_regularizer=regularizers.l2(weight_decay)),
-        Dropout(0.5),
-        Dense(num_classes, activation='softmax', kernel_regularizer=regularizers.l2(weight_decay))
-    ])
-
-    # Compile the model
+    model = Model(inputs=base_model.input, outputs=output)
     optimizer = Adam(learning_rate=learning_rate)
     model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     return model
 
-
-def train_model(dataset_dir, output_model_path, img_size=(128, 128), learning_rate=0.001, weight_decay=1e-4):
+def train_model(dataset_dir, output_model_path, img_size=(160, 160), learning_rate=0.001):
     """
     Train and save a face recognition model.
-
-    Args:
-        dataset_dir (str): Path to dataset directory.
-        output_model_path (str): Path to save the trained model.
-        img_size (tuple): Target size for resizing images.
-        learning_rate (float): Learning rate for the optimizer.
-        weight_decay (float): Weight decay (L2 regularization factor).
     """
-    # Load dataset
     X, y, label_encoder = load_dataset(dataset_dir, img_size)
-    num_classes = len(np.unique(y))
+    num_classes = len(np.unique(y))  # Number of unique classes based on labels
 
     # Split data into training and validation sets
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # Build and train the improved model
-    model = build_improved_model(
+    # Compute class weights to handle class imbalance
+    class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+    class_weight_dict = dict(enumerate(class_weights))
+
+    # Build the model
+    model = build_mobilenetv2_model(
         input_shape=(img_size[0], img_size[1], 3),
         num_classes=num_classes,
-        learning_rate=learning_rate,
-        weight_decay=weight_decay
+        learning_rate=learning_rate
     )
-    history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=20, batch_size=25)
 
-    # Extract final accuracy values
-    final_train_accuracy = history.history['accuracy'][-1] * 100  # Convert to percentage
-    final_val_accuracy = history.history['val_accuracy'][-1] * 100  # Convert to percentage
+    early_stopping = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
 
-    # Print training and validation accuracy as percentages
-    print(f"Final Training Accuracy: {final_train_accuracy:.2f}%")
-    print(f"Final Validation Accuracy: {final_val_accuracy:.2f}%")
+    # Train the model
+    history = model.fit(
+        X_train, y_train,
+        validation_data=(X_val, y_val),
+        epochs=20,
+        batch_size=20,
+        class_weight=class_weight_dict,
+        callbacks=[early_stopping]
+    )
 
     # Save the model and label encoder
     model.save(output_model_path)
